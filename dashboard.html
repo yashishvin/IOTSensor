@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sensor Analytics Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2em;
+      background: #f4f4f4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1em;
+    }
+    h1 {
+      width: 100%;
+      color: #333;
+    }
+    .card {
+      background: #fff;
+      padding: 1.5em;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 280px;
+      flex-shrink: 0;
+    }
+    .metric {
+      font-size: 1.1em;
+      margin: 0.5em 0;
+    }
+    .updated {
+      color: #777;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sensor Analytics Dashboard</h1>
+
+  <div id="dashboard">
+    <!-- Sensor cards will be injected here -->
+  </div>
+
+  <script>
+    const sensors = ["Accelerometer", "Gyroscope", "GPS"];
+    const apiBase = "https://xfpr9hy1eb.execute-api.us-east-1.amazonaws.com/prod/analytics";
+
+    function createCard(sensor) {
+      return `
+        <div class="card" id="${sensor}">
+          <p class="metric"><strong>${sensor}</strong></p>
+          <p class="metric">Average: <span id="${sensor}-avg">--</span></p>
+          <p class="metric">Minimum: <span id="${sensor}-min">--</span></p>
+          <p class="metric">Maximum: <span id="${sensor}-max">--</span></p>
+          <p class="updated" id="${sensor}-updated">Last updated: --</p>
+        </div>
+      `;
+    }
+
+    document.getElementById("dashboard").innerHTML = sensors.map(createCard).join("");
+
+    async function fetchSensorData(sensor) {
+      const url = `${apiBase}/${sensor}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const stats = data.analytics || {};
+
+        document.getElementById(`${sensor}-avg`).textContent = stats.avg ?? "N/A";
+        document.getElementById(`${sensor}-min`).textContent = stats.min ?? "N/A";
+        document.getElementById(`${sensor}-max`).textContent = stats.max ?? "N/A";
+        document.getElementById(`${sensor}-updated`).textContent = "Last updated: " + new Date().toLocaleTimeString();
+      } catch (err) {
+        console.error(`Error fetching ${sensor}:`, err);
+        document.getElementById(`${sensor}-updated`).textContent = "Failed to fetch.";
+      }
+    }
+
+    function refreshAll() {
+      sensors.forEach(fetchSensorData);
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 60000); // refresh every 60 seconds
+  </script>
+</body>
+</html>
